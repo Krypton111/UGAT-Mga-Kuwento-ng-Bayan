@@ -99,9 +99,9 @@ if (!isset($_SESSION['username'])) {
         .settings-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: clamp(28px, 3.1vw, 52px);
-            height: clamp(28px, 3.1vw, 52px);
-            margin-top: calc(clamp(28px, 3.1vw, 52px) / -2);
+            width: clamp(42px, 4.6vw, 76px);
+            height: clamp(42px, 4.6vw, 76px);
+            margin-top: calc(clamp(42px, 4.6vw, 76px) / -2);
             border: 0;
             border-radius: 50%;
             background: url("Assets/img/icon%20slider.png") center / contain no-repeat;
@@ -109,8 +109,8 @@ if (!isset($_SESSION['username'])) {
         }
 
         .settings-slider::-moz-range-thumb {
-            width: clamp(28px, 3.1vw, 52px);
-            height: clamp(28px, 3.1vw, 52px);
+            width: clamp(42px, 4.6vw, 76px);
+            height: clamp(42px, 4.6vw, 76px);
             border: 0;
             border-radius: 50%;
             background: url("Assets/img/icon%20slider.png") center / contain no-repeat;
@@ -143,9 +143,10 @@ if (!isset($_SESSION['username'])) {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 165%;
-            height: auto;
-            max-width: none;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
             transform: translate(-50%, -50%);
             pointer-events: none;
@@ -204,13 +205,13 @@ if (!isset($_SESSION['username'])) {
                 width: 98vw;
             }
             .settings-slider::-webkit-slider-thumb {
-                width: 25px;
-                height: 25px;
-                margin-top: -12px;
+                width: 34px;
+                height: 34px;
+                margin-top: -16px;
             }
             .settings-slider::-moz-range-thumb {
-                width: 25px;
-                height: 25px;
+                width: 34px;
+                height: 34px;
             }
             .back-button {
                 left: 8px;
