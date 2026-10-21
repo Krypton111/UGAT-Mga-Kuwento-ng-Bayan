@@ -151,7 +151,7 @@ $isAdmin = $user['is_admin'] ?? 0;
             <!-- Play Story goes straight to the Godot export -->
             <a href="assets/games/lair/index.html" class="menu-item" id="playStoryBtn">Play Story</a>
             <a href="dashboard.php" class="menu-item">Help &amp; Guide</a>
-            <a href="profile.php" class="menu-item">Settings</a>
+            <a href="settings.php" class="menu-item">Settings</a>
             <a href="logout.php" class="menu-item">Logout</a>
         </nav>
     </div>
