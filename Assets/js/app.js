@@ -53,20 +53,48 @@
 
     /* ---------- PERSISTENT SETTINGS ---------- */
     function initPersistentSettings() {
-        const brightness = Number(localStorage.getItem('settingsBrightness') ?? 1);
-        const soundVolume = Number(localStorage.getItem('soundVolume') ?? 0.8);
-        const safeBrightness = Number.isFinite(brightness) ? Math.min(1, Math.max(0.35, brightness)) : 1;
-        const safeSound = Number.isFinite(soundVolume) ? Math.min(1, Math.max(0, soundVolume)) : 0.8;
+        const readNumber = (key, fallback, min, max) => {
+            const raw = localStorage.getItem(key);
+            const parsed = raw === null ? fallback : Number(raw);
+            return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+        };
 
-        // Apply brightness consistently when navigating between pages.
-        document.body.style.filter = 'brightness(' + safeBrightness + ')';
+        const brightness = readNumber('settingsBrightness', 1, 0.35, 1);
+        const soundVolume = readNumber('soundVolume', 0.8, 0, 1);
+        const musicVolume = readNumber('musicVolume', 0.35, 0, 1);
 
-        // Apply the saved effects/SFX volume to media that isn't background music.
-        document.querySelectorAll('audio, video').forEach(media => {
-            if (media.id !== 'interface-music' && media.id !== 'settings-music') {
-                media.volume = safeSound;
-            }
-        });
+        // Use a dark overlay instead of body filters, which can break fixed UI.
+        let overlay = document.getElementById('saved-brightness-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'saved-brightness-overlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            Object.assign(overlay.style, {
+                position: 'fixed', inset: '0', background: '#000',
+                pointerEvents: 'none', zIndex: '99990',
+                transition: 'opacity 100ms linear'
+            });
+            document.body.appendChild(overlay);
+        }
+        overlay.style.opacity = String(1 - brightness);
+
+        // Apply saved volumes to existing media and media created later.
+        const applyMediaVolume = media => {
+            media.volume = (media.id === 'interface-music' || media.id === 'settings-music')
+                ? musicVolume : soundVolume;
+        };
+        document.querySelectorAll('audio, video').forEach(applyMediaVolume);
+
+        if (!window.__persistentVolumeObserver) {
+            window.__persistentVolumeObserver = new MutationObserver(records => {
+                records.forEach(record => record.addedNodes.forEach(node => {
+                    if (node.nodeType !== 1) return;
+                    if (node.matches && node.matches('audio, video')) applyMediaVolume(node);
+                    if (node.querySelectorAll) node.querySelectorAll('audio, video').forEach(applyMediaVolume);
+                }));
+            });
+            window.__persistentVolumeObserver.observe(document.documentElement, { childList: true, subtree: true });
+        }
     }
 
     /* ---------- PASSWORD TOGGLE ---------- */
