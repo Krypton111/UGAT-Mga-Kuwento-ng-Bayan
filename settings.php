@@ -128,8 +128,8 @@ if (!isset($_SESSION['username'])) {
 
         .fullscreen-toggle {
             position: absolute;
-            left: 63.6%;
-            top: 29.9%;
+            left: 62.6%;
+            top: 28.7%;
             width: 8.2%;
             height: 13.2%;
             padding: 0;
@@ -143,8 +143,9 @@ if (!isset($_SESSION['username'])) {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 68%;
-            height: 78%;
+            width: 165%;
+            height: auto;
+            max-width: none;
             object-fit: contain;
             transform: translate(-50%, -50%);
             pointer-events: none;
