@@ -28,8 +28,8 @@ $isAdmin = $user['is_admin'] ?? 0;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ᜂᜄᜆ᜔: Kuwento ng Bayan — Heritage Hub</title>
-    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/x-icon" href="Assets/img/favicon.ico">
+    <link rel="stylesheet" href="Assets/css/style.css">
     <style>
         /* ------------------------------------------------------
            Dashboard entry animations
@@ -137,19 +137,19 @@ $isAdmin = $user['is_admin'] ?? 0;
 <div class="page-fog"></div>
 <div class="dashboard-fog"></div>
 
-<img src="assets/img/fulltitle.png"
+<img src="Assets/img/fulltitle.png"
      alt="ᜂᜄᜆ᜔: Mga Kuwento ng Bayan"
      class="full-title">
 
 <audio id="interface-music" loop preload="auto">
-    <source src="assets/mp3/theme.mp3" type="audio/mpeg">
+    <source src="Assets/mp3/theme.mp3" type="audio/mpeg">
 </audio>
 
 <div class="page-wrapper">
     <div class="title-screen">
         <nav class="menu" aria-label="Main menu">
             <!-- Play Story goes straight to the Godot export -->
-            <a href="assets/games/lair/index.html" class="menu-item" id="playStoryBtn">Play Story</a>
+            <a href="Assets/games/lair/index.html" class="menu-item" id="playStoryBtn">Play Story</a>
             <a href="dashboard.php" class="menu-item">Help &amp; Guide</a>
             <a href="settings.php" class="menu-item">Settings</a>
             <a href="logout.php" class="menu-item">Logout</a>
@@ -243,7 +243,45 @@ $isAdmin = $user['is_admin'] ?? 0;
     });
 </script>
 
-<script src="assets/js/particles.js"></script>
-<script src="assets/js/app.js"></script>
+<script src="Assets/js/particles.js"></script>
+<script>
+    // Apply the settings immediately on the dashboard too.
+    (function () {
+        const getSetting = (key, fallback, min, max) => {
+            const raw = localStorage.getItem(key);
+            const value = raw === null ? fallback : Number(raw);
+            return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+        };
+
+        const brightness = getSetting('settingsBrightness', 1, 0.35, 1);
+        const soundVolume = getSetting('soundVolume', 0.8, 0, 1);
+        const musicVolume = getSetting('musicVolume', 0.35, 0, 1);
+
+        let overlay = document.getElementById('saved-brightness-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'saved-brightness-overlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            Object.assign(overlay.style, {
+                position: 'fixed', inset: '0', background: '#000',
+                pointerEvents: 'none', zIndex: '997',
+                transition: 'opacity 100ms linear'
+            });
+            document.body.appendChild(overlay);
+        }
+        overlay.style.opacity = String(1 - brightness);
+
+        const music = document.getElementById('interface-music');
+        if (music) music.volume = musicVolume;
+        document.querySelectorAll('audio, video').forEach(media => {
+            if (media.id !== 'interface-music') media.volume = soundVolume;
+        });
+
+        const slider = document.getElementById('volume-slider');
+        if (slider) slider.value = String(musicVolume);
+    })();
+</script>
+
+<script src="Assets/js/app.js"></script>
 </body>
 </html>
