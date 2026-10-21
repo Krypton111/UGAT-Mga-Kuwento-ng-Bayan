@@ -51,6 +51,24 @@
         audio.addEventListener('pause', () => setIcon(false));
     }
 
+    /* ---------- PERSISTENT SETTINGS ---------- */
+    function initPersistentSettings() {
+        const brightness = Number(localStorage.getItem('settingsBrightness') ?? 1);
+        const soundVolume = Number(localStorage.getItem('soundVolume') ?? 0.8);
+        const safeBrightness = Number.isFinite(brightness) ? Math.min(1, Math.max(0.35, brightness)) : 1;
+        const safeSound = Number.isFinite(soundVolume) ? Math.min(1, Math.max(0, soundVolume)) : 0.8;
+
+        // Apply brightness consistently when navigating between pages.
+        document.body.style.filter = 'brightness(' + safeBrightness + ')';
+
+        // Apply the saved effects/SFX volume to media that isn't background music.
+        document.querySelectorAll('audio, video').forEach(media => {
+            if (media.id !== 'interface-music' && media.id !== 'settings-music') {
+                media.volume = safeSound;
+            }
+        });
+    }
+
     /* ---------- PASSWORD TOGGLE ---------- */
     function initPasswordToggles() {
         document.querySelectorAll('.toggle-password').forEach(btn => {
@@ -176,6 +194,7 @@
 
     /* ---------- INIT ---------- */
     function init() {
+        initPersistentSettings();
         initMusic();
         initPasswordToggles();
         initWifi();
