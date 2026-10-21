@@ -1,0 +1,5 @@
+.env
+.env.*
+gmail_app_password.env
+# Exclude email configuration file
+Includes/send_email.php
