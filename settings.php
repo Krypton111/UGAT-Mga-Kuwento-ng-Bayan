@@ -297,7 +297,9 @@ if (!isset($_SESSION['username'])) {
     }
 
     function syncFullscreenState() {
-        const enabled = Boolean(document.fullscreenElement);
+        // Keep the preference separate from actual fullscreen; browsers exit
+        // fullscreen automatically during page navigation.
+        const enabled = localStorage.getItem('fullscreenPreference') === 'true';
         fullscreenButton.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     }
 
@@ -306,15 +308,18 @@ if (!isset($_SESSION['username'])) {
     musicSlider.addEventListener('input', applyMusicVolume);
 
     fullscreenButton.addEventListener('click', async function () {
+        const wasEnabled = localStorage.getItem('fullscreenPreference') === 'true';
+        const shouldEnable = !wasEnabled;
+        localStorage.setItem('fullscreenPreference', String(shouldEnable));
+        syncFullscreenState();
         try {
-            if (document.fullscreenElement) {
-                await document.exitFullscreen();
-            } else {
+            if (shouldEnable && !document.fullscreenElement) {
                 await document.documentElement.requestFullscreen();
+            } else if (!shouldEnable && document.fullscreenElement) {
+                await document.exitFullscreen();
             }
         } catch (error) {
-            // Browsers can deny fullscreen requests; leave the visual state accurate.
-            syncFullscreenState();
+            // The saved preference remains; browser policy may block fullscreen.
         }
     });
 
