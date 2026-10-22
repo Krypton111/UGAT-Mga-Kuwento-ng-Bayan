@@ -220,9 +220,74 @@
         }
     };
 
+    /* ---------- FULLSCREEN PREFERENCE / RESTORE ---------- */
+    function initFullscreenRestore() {
+        const preferenceKey = 'fullscreenPreference';
+        const buttonId = 'fullscreen-restore-button';
+        let restoreButton = document.getElementById(buttonId);
+
+        function preferenceEnabled() {
+            return localStorage.getItem(preferenceKey) === 'true';
+        }
+
+        function ensureRestoreButton() {
+            if (restoreButton) return restoreButton;
+
+            restoreButton = document.createElement('button');
+            restoreButton.id = buttonId;
+            restoreButton.type = 'button';
+            restoreButton.textContent = '⛶  Return to Fullscreen';
+            restoreButton.setAttribute('aria-label', 'Return to fullscreen');
+            Object.assign(restoreButton.style, {
+                position: 'fixed',
+                right: '18px',
+                bottom: '18px',
+                zIndex: '100000',
+                display: 'none',
+                padding: '12px 16px',
+                border: '1px solid rgba(255,255,255,.35)',
+                borderRadius: '10px',
+                background: 'rgba(35, 28, 20, .94)',
+                color: '#fff4d6',
+                font: '600 14px/1.2 system-ui, sans-serif',
+                boxShadow: '0 5px 20px rgba(0,0,0,.35)',
+                cursor: 'pointer'
+            });
+
+            restoreButton.addEventListener('click', async function () {
+                try {
+                    if (!document.fullscreenElement) {
+                        await document.documentElement.requestFullscreen();
+                    }
+                } catch (error) {
+                    // Keep the button available so the user can retry.
+                }
+                updateRestoreButton();
+            });
+
+            document.body.appendChild(restoreButton);
+            return restoreButton;
+        }
+
+        function updateRestoreButton() {
+            const button = ensureRestoreButton();
+            const shouldShow = preferenceEnabled() && !document.fullscreenElement;
+            button.style.display = shouldShow ? 'block' : 'none';
+        }
+
+        document.addEventListener('fullscreenchange', updateRestoreButton);
+        window.addEventListener('pageshow', updateRestoreButton);
+        window.addEventListener('storage', function (event) {
+            if (event.key === preferenceKey) updateRestoreButton();
+        });
+
+        updateRestoreButton();
+    }
+
     /* ---------- INIT ---------- */
     function init() {
         initPersistentSettings();
+        initFullscreenRestore();
         initMusic();
         initPasswordToggles();
         initWifi();
