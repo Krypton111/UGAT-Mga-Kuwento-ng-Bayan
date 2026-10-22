@@ -308,26 +308,64 @@ if (!isset($_SESSION['username'])) {
     musicSlider.addEventListener('input', applyMusicVolume);
 
     fullscreenButton.addEventListener('click', async function () {
-        // Base the click on the browser's actual fullscreen state, not only the
-        // saved preference. This lets the user re-enter fullscreen after a page
-        // navigation has caused the browser to leave fullscreen.
-        const shouldEnable = !document.fullscreenElement;
+        // The checkbox controls the saved preference. Actual fullscreen may end
+        // during navigation, so restoring it is handled by a separate button.
+        const shouldEnable = localStorage.getItem('fullscreenPreference') !== 'true';
         localStorage.setItem('fullscreenPreference', String(shouldEnable));
         syncFullscreenState();
 
         try {
-            if (shouldEnable) {
+            if (shouldEnable && !document.fullscreenElement) {
                 await document.documentElement.requestFullscreen();
-            } else {
+            } else if (!shouldEnable && document.fullscreenElement) {
                 await document.exitFullscreen();
             }
         } catch (error) {
-            // Browsers may reject fullscreen requests; keep the preference
-            // visible so the user can try again with another click.
+            // Browsers may reject fullscreen requests; the user can retry.
         }
+        updateFullscreenRestoreButton();
     });
 
-    document.addEventListener('fullscreenchange', syncFullscreenState);
+    // Show a user-initiated restore control when fullscreen was requested but
+    // the browser exited it during navigation.
+    let fullscreenRestoreButton = null;
+    function updateFullscreenRestoreButton() {
+        const wanted = localStorage.getItem('fullscreenPreference') === 'true';
+        const needsRestore = wanted && !document.fullscreenElement;
+
+        if (needsRestore && !fullscreenRestoreButton) {
+            fullscreenRestoreButton = document.createElement('button');
+            fullscreenRestoreButton.type = 'button';
+            fullscreenRestoreButton.textContent = '⛶  Return to Fullscreen';
+            fullscreenRestoreButton.setAttribute('aria-label', 'Return to fullscreen');
+            Object.assign(fullscreenRestoreButton.style, {
+                position: 'fixed', right: '18px', bottom: '18px', zIndex: '100000',
+                padding: '12px 16px', border: '1px solid rgba(255,255,255,.35)',
+                borderRadius: '10px', background: 'rgba(35, 28, 20, .94)',
+                color: '#fff4d6', font: '600 14px/1.2 system-ui, sans-serif',
+                boxShadow: '0 5px 20px rgba(0,0,0,.35)', cursor: 'pointer'
+            });
+            fullscreenRestoreButton.addEventListener('click', async function () {
+                try {
+                    await document.documentElement.requestFullscreen();
+                } catch (error) {
+                    // Keep the restore control available for another user click.
+                }
+                updateFullscreenRestoreButton();
+            });
+            document.body.appendChild(fullscreenRestoreButton);
+        }
+
+        if (fullscreenRestoreButton) {
+            fullscreenRestoreButton.style.display = needsRestore ? 'block' : 'none';
+        }
+    }
+
+    document.addEventListener('fullscreenchange', function () {
+        syncFullscreenState();
+        updateFullscreenRestoreButton();
+    });
+    window.addEventListener('pageshow', updateFullscreenRestoreButton);
 
     // Use the same saved music volume as the dashboard. Playback remains subject
     // to the browser's autoplay policy.
@@ -335,6 +373,7 @@ if (!isset($_SESSION['username'])) {
     applySoundVolume();
     applyMusicVolume();
     syncFullscreenState();
+    updateFullscreenRestoreButton();
     music.play().catch(function () {});
 
     backLink.addEventListener('click', function (event) {
