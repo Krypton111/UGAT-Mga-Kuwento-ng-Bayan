@@ -308,18 +308,22 @@ if (!isset($_SESSION['username'])) {
     musicSlider.addEventListener('input', applyMusicVolume);
 
     fullscreenButton.addEventListener('click', async function () {
-        const wasEnabled = localStorage.getItem('fullscreenPreference') === 'true';
-        const shouldEnable = !wasEnabled;
+        // Base the click on the browser's actual fullscreen state, not only the
+        // saved preference. This lets the user re-enter fullscreen after a page
+        // navigation has caused the browser to leave fullscreen.
+        const shouldEnable = !document.fullscreenElement;
         localStorage.setItem('fullscreenPreference', String(shouldEnable));
         syncFullscreenState();
+
         try {
-            if (shouldEnable && !document.fullscreenElement) {
+            if (shouldEnable) {
                 await document.documentElement.requestFullscreen();
-            } else if (!shouldEnable && document.fullscreenElement) {
+            } else {
                 await document.exitFullscreen();
             }
         } catch (error) {
-            // The saved preference remains; browser policy may block fullscreen.
+            // Browsers may reject fullscreen requests; keep the preference
+            // visible so the user can try again with another click.
         }
     });
 
