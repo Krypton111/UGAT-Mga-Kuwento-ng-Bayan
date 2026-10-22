@@ -280,75 +280,8 @@ $isAdmin = $user['is_admin'] ?? 0;
         const slider = document.getElementById('volume-slider');
         if (slider) slider.value = String(musicVolume);
 
-        // Browsers require a fresh user gesture to enter fullscreen after
-        // navigation. If the user saved fullscreen as enabled, offer a button.
-        const resumeFullscreen = localStorage.getItem('fullscreenPreference') === 'true';
-        if (resumeFullscreen && !document.fullscreenElement) {
-            const prompt = document.createElement('div');
-            prompt.id = 'fullscreen-resume-prompt';
-            Object.assign(prompt.style, {
-                position: 'fixed',
-                right: '20px',
-                bottom: '20px',
-                zIndex: '100000',
-                maxWidth: 'min(360px, calc(100vw - 40px))',
-                padding: '14px 16px',
-                borderRadius: '12px',
-                background: 'rgba(35, 29, 20, 0.96)',
-                color: '#fff3d8',
-                boxShadow: '0 8px 28px rgba(0,0,0,.35)',
-                fontFamily: 'inherit',
-                fontSize: '14px',
-                lineHeight: '1.45'
-            });
-
-            const message = document.createElement('div');
-            message.textContent = 'Fullscreen is enabled in your settings. Click below to re-enter fullscreen.';
-            message.style.marginBottom = '10px';
-
-            const enterButton = document.createElement('button');
-            enterButton.type = 'button';
-            enterButton.textContent = 'Enter Fullscreen';
-            Object.assign(enterButton.style, {
-                border: '0',
-                borderRadius: '7px',
-                padding: '9px 13px',
-                cursor: 'pointer',
-                background: '#d6b878',
-                color: '#2b2418',
-                fontWeight: '700'
-            });
-
-            const dismissButton = document.createElement('button');
-            dismissButton.type = 'button';
-            dismissButton.textContent = 'Not now';
-            Object.assign(dismissButton.style, {
-                marginLeft: '10px',
-                border: '1px solid rgba(255,243,216,.5)',
-                borderRadius: '7px',
-                padding: '8px 12px',
-                cursor: 'pointer',
-                background: 'transparent',
-                color: '#fff3d8'
-            });
-            dismissButton.addEventListener('click', () => prompt.remove());
-
-            enterButton.addEventListener('click', async () => {
-                try {
-                    await document.documentElement.requestFullscreen();
-                    prompt.remove();
-                } catch (error) {
-                    message.textContent = 'Your browser blocked fullscreen. Use the browser fullscreen control, or try clicking Enter Fullscreen again.';
-                }
-            });
-
-            document.addEventListener('fullscreenchange', () => {
-                if (document.fullscreenElement) prompt.remove();
-            });
-
-            prompt.append(message, enterButton, dismissButton);
-            document.body.appendChild(prompt);
-        }
+        // Fullscreen preference is stored by Settings. Browsers do not allow
+        // websites to force browser fullscreen again after a page navigation.
     })();
 </script>
 
