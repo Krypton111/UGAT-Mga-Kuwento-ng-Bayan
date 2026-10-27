@@ -1,0 +1,4 @@
+Assets/mp4/hollow_knight_wao.mp4 filter=lfs diff=lfs merge=lfs -text
+Assets/mp3/interface_music.mp3 filter=lfs diff=lfs merge=lfs -text
+Assets/games/lair/index.pck filter=lfs diff=lfs merge=lfs -text
+Assets/games/lair/index.wasm filter=lfs diff=lfs merge=lfs -text

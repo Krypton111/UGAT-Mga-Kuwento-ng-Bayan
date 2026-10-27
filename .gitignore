@@ -1,0 +1,14 @@
+.env
+.env.*
+gmail_app_password.env
+# Exclude email configuration file
+Includes/send_email.php
+
+# Godot web export files
+/Assets/games/lair/
+
+# Ignore Godot exported game files
+/Assets/games/lair/
+
+# Godot game export - excluded from Git
+/Assets/games/lair/
