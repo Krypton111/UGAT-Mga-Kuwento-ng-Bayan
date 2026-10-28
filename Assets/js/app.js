@@ -279,23 +279,65 @@
         });
     }
 
-    /* ---------- WIFI INDICATOR ---------- */
+    /* ---------- WIFI / INTERNET CONNECTIVITY INDICATOR ---------- */
     function initWifi() {
         if (document.getElementById('wifi-indicator')) return;
+
         const el = document.createElement('div');
         el.id = 'wifi-indicator';
-        el.innerHTML = '<span class="wifi-dot"></span><span class="wifi-text">Checking…</span>';
+        el.innerHTML = '<span class="wifi-dot"></span><span class="wifi-text">Checking...</span>';
         document.body.appendChild(el);
 
-        const check = () => {
+        let checkInProgress = false;
+        let lastCheckId = 0;
+
+        const setStatus = (online, label) => {
             const t = el.querySelector('.wifi-text');
-            if (navigator.onLine) { el.className = 'online';  t.textContent = 'Online'; }
-            else                  { el.className = 'offline'; t.textContent = 'No Connection'; }
+            el.className = online ? 'online' : 'offline';
+            if (t) t.textContent = label || (online ? 'Online' : 'No Connection');
         };
+
+        const check = async () => {
+            const checkId = ++lastCheckId;
+
+            // navigator.onLine only reports the browser's network-interface state.
+            // It can still be true when Wi-Fi or the internet is unavailable, so
+            // verify that an external connectivity-check endpoint can be reached.
+            if (!navigator.onLine) {
+                setStatus(false, 'No Connection');
+                return;
+            }
+            if (checkInProgress) return;
+            checkInProgress = true;
+            setStatus(false, 'Checking...');
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            try {
+                await fetch('https://www.gstatic.com/generate_204?check=' + Date.now(), {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+                if (checkId === lastCheckId && navigator.onLine) {
+                    setStatus(true, 'Online');
+                }
+            } catch (_) {
+                if (checkId === lastCheckId) setStatus(false, 'No Connection');
+            } finally {
+                clearTimeout(timeout);
+                checkInProgress = false;
+            }
+        };
+
         check();
-        window.addEventListener('online',  check);
-        window.addEventListener('offline', check);
-        setInterval(check, 30000);
+        window.addEventListener('online', check);
+        window.addEventListener('offline', () => {
+            lastCheckId++;
+            setStatus(false, 'No Connection');
+        });
+        setInterval(check, 15000);
     }
 
     /* ---------- MODAL ---------- */
