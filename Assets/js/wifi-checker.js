@@ -3,84 +3,75 @@
     'use strict';
 
     function createWifiIndicator() {
-        // Check if indicator already exists
-        if (document.getElementById('wifi-indicator')) {
-            return document.getElementById('wifi-indicator');
-        }
-        
+        const existing = document.getElementById('wifi-indicator');
+        if (existing) return existing;
+
         const indicator = document.createElement('div');
         indicator.id = 'wifi-indicator';
-        indicator.innerHTML = `
-            <span class="wifi-dot"></span>
-            <span class="wifi-text">Checking...</span>
-        `;
+        indicator.innerHTML = '<span class="wifi-dot"></span><span class="wifi-text">Checking...</span>';
         document.body.appendChild(indicator);
         return indicator;
     }
 
-    function updateIndicator(status, text) {
+    function updateIndicator(online, text) {
         const indicator = document.getElementById('wifi-indicator');
         if (!indicator) return;
-        
+
         const textElement = indicator.querySelector('.wifi-text');
-        if (textElement) {
-            textElement.textContent = text;
+        if (textElement) textElement.textContent = text || (online ? 'Online' : 'No Connection');
+
+        indicator.className = online ? 'online' : 'offline';
+    }
+
+    let checkInProgress = false;
+    let latestCheckId = 0;
+
+    async function checkConnection() {
+        const checkId = ++latestCheckId;
+
+        // navigator.onLine can remain true when the device has no usable internet.
+        if (!navigator.onLine) {
+            updateIndicator(false, 'No Connection');
+            return;
         }
-        
-        // Remove all classes
-        indicator.className = '';
-        
-        if (status === 'online') {
-            indicator.classList.add('online');
-        } else if (status === 'offline') {
-            indicator.classList.add('offline');
+        if (checkInProgress) return;
+
+        checkInProgress = true;
+        updateIndicator(false, 'Checking...');
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+
+        try {
+            // A no-cors request is used only as a reachability probe; the response
+            // body is not read. A failed request or timeout means no connection.
+            await fetch('https://www.gstatic.com/generate_204?check=' + Date.now(), {
+                method: 'GET',
+                mode: 'no-cors',
+                cache: 'no-store',
+                signal: controller.signal
+            });
+
+            if (checkId === latestCheckId && navigator.onLine) {
+                updateIndicator(true, 'Online');
+            }
+        } catch (_) {
+            if (checkId === latestCheckId) updateIndicator(false, 'No Connection');
+        } finally {
+            clearTimeout(timeout);
+            checkInProgress = false;
         }
     }
 
-    function checkConnection() {
-        const indicator = document.getElementById('wifi-indicator');
-        if (!indicator) return;
+    createWifiIndicator();
+    checkConnection();
 
-        if (navigator.onLine) {
-            updateIndicator('online', 'Online');
-        } else {
-            updateIndicator('offline', 'No Connection');
-        }
-    }
-
-    // Initialize
-    const indicator = createWifiIndicator();
-    
-    // Wait for page to fully load before checking
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            checkConnection();
-        });
-    } else {
-        checkConnection();
-    }
-
-    // Listen for connection changes
-    window.addEventListener('online', function() {
-        checkConnection();
-        // Show online status for 3 seconds then fade
-        const indicator = document.getElementById('wifi-indicator');
-        if (indicator) {
-            indicator.style.opacity = '1';
-            setTimeout(() => {
-                indicator.style.opacity = '0.7';
-            }, 3000);
-        }
-    });
-    
+    window.addEventListener('online', checkConnection);
     window.addEventListener('offline', function() {
-        checkConnection();
-        const indicator = document.getElementById('wifi-indicator');
-        if (indicator) {
-            indicator.style.opacity = '1';
-        }
+        latestCheckId++;
+        updateIndicator(false, 'No Connection');
     });
 
-    // Check periodically (every 30 seconds)
-    setInterval(checkConnection, 30000);
+    // Re-check periodically in case connectivity changes without browser events.
+    setInterval(checkConnection, 15000);
 })();
