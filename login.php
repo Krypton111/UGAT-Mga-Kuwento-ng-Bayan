@@ -120,6 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <?php endif; ?>
 
         <form method="POST" id="loginForm">
+            <div class="message" id="loginConnectivityMessage" role="status" aria-live="polite" hidden></div>
             <div class="field">
                 <label for="username">Email / Username</label>
                 <input type="text" name="username" id="username"
@@ -162,6 +163,78 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }, 1300);
     })();
     <?php endif; ?>
+
+    // ----------------------------------------------------------
+    // Require a live internet connection before submitting login.
+    // navigator.onLine alone is insufficient, so probe an external
+    // endpoint and fail closed if it cannot be reached.
+    // ----------------------------------------------------------
+    (function () {
+        const form = document.getElementById('loginForm');
+        const button = document.getElementById('loginBtn');
+        const notice = document.getElementById('loginConnectivityMessage');
+        if (!form || !button || !notice) return;
+
+        let checking = false;
+        let connectionApproved = false;
+
+        function showConnectionError(message) {
+            notice.textContent = message;
+            notice.hidden = false;
+        }
+
+        form.addEventListener('submit', async function (event) {
+            if (connectionApproved) return;
+
+            event.preventDefault();
+            if (checking) return;
+
+            if (!navigator.onLine) {
+                showConnectionError('You need an active internet connection to log in. Please connect to Wi-Fi or mobile data and try again.');
+                return;
+            }
+
+            checking = true;
+            button.disabled = true;
+            button.textContent = 'Checking connection…';
+            notice.hidden = true;
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+            try {
+                await fetch('https://www.gstatic.com/generate_204?check=' + Date.now(), {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+
+                if (!navigator.onLine) {
+                    throw new Error('Network connection was lost.');
+                }
+
+                connectionApproved = true;
+                HTMLFormElement.prototype.submit.call(form);
+            } catch (_) {
+                showConnectionError('No internet connection detected. Connect to the internet before logging in.');
+            } finally {
+                clearTimeout(timeoutId);
+                checking = false;
+                if (!connectionApproved) {
+                    button.disabled = false;
+                    button.textContent = 'Log In';
+                }
+            }
+        });
+
+        window.addEventListener('offline', function () {
+            connectionApproved = false;
+            if (!checking) {
+                showConnectionError('You are offline. Connect to the internet before logging in.');
+            }
+        });
+    })();
 
     // ----------------------------------------------------------
     // Exit transition: any ".exit-link" plays the slide-out
