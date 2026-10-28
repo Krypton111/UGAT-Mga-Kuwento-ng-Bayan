@@ -289,55 +289,63 @@
         document.body.appendChild(el);
 
         let checkInProgress = false;
-        let lastCheckId = 0;
+        let latestCheckId = 0;
 
-        const setStatus = (online, label) => {
-            const t = el.querySelector('.wifi-text');
+        const setStatus = online => {
             el.className = online ? 'online' : 'offline';
-            if (t) t.textContent = label || (online ? 'Online' : 'No Connection');
+            const text = el.querySelector('.wifi-text');
+            if (text) text.textContent = online ? 'Online' : 'Offline';
         };
 
-        const check = async () => {
-            const checkId = ++lastCheckId;
-
-            // navigator.onLine only reports the browser's network-interface state.
-            // It can still be true when Wi-Fi or the internet is unavailable, so
-            // verify that an external connectivity-check endpoint can be reached.
+        async function checkConnection() {
+            // Update immediately when the browser knows the network is disconnected.
             if (!navigator.onLine) {
-                setStatus(false, 'No Connection');
+                latestCheckId++;
+                setStatus(false);
                 return;
             }
-            if (checkInProgress) return;
-            checkInProgress = true;
-            setStatus(false, 'Checking...');
 
+            // Do not invalidate a valid in-flight check just because a timer fired.
+            if (checkInProgress) return;
+
+            checkInProgress = true;
+            const checkId = ++latestCheckId;
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
             try {
+                // A successful external request confirms usable internet, not merely
+                // a connected Wi-Fi adapter. no-cors is used as a reachability probe.
                 await fetch('https://www.gstatic.com/generate_204?check=' + Date.now(), {
                     method: 'GET',
                     mode: 'no-cors',
                     cache: 'no-store',
                     signal: controller.signal
                 });
-                if (checkId === lastCheckId && navigator.onLine) {
-                    setStatus(true, 'Online');
+
+                if (checkId === latestCheckId) {
+                    setStatus(navigator.onLine);
                 }
             } catch (_) {
-                if (checkId === lastCheckId) setStatus(false, 'No Connection');
+                if (checkId === latestCheckId) setStatus(false);
             } finally {
-                clearTimeout(timeout);
+                clearTimeout(timeoutId);
                 checkInProgress = false;
+                // If connectivity was lost while the request was pending, don't
+                // leave a stale Online status behind.
+                if (!navigator.onLine) setStatus(false);
             }
-        };
+        }
 
-        check();
-        window.addEventListener('online', check);
+        setStatus(false);
+        checkConnection();
+        window.addEventListener('online', checkConnection);
         window.addEventListener('offline', () => {
-            lastCheckId++;
-            setStatus(false, 'No Connection');
+            latestCheckId++;
+            setStatus(false);
         });
-        setInterval(check, 15000);
+        // Recheck every 5 seconds so a lost connection is detected promptly.
+        setInterval(checkConnection, 5000);
     }
 
     /* ---------- MODAL ---------- */
