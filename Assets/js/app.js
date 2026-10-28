@@ -279,75 +279,6 @@
         });
     }
 
-    /* ---------- WIFI / INTERNET CONNECTIVITY INDICATOR ---------- */
-    function initWifi() {
-        if (document.getElementById('wifi-indicator')) return;
-
-        const el = document.createElement('div');
-        el.id = 'wifi-indicator';
-        el.innerHTML = '<span class="wifi-dot"></span><span class="wifi-text">Checking...</span>';
-        document.body.appendChild(el);
-
-        let checkInProgress = false;
-        let latestCheckId = 0;
-
-        const setStatus = online => {
-            el.className = online ? 'online' : 'offline';
-            const text = el.querySelector('.wifi-text');
-            if (text) text.textContent = online ? 'Online' : 'Offline';
-        };
-
-        async function checkConnection() {
-            // Update immediately when the browser knows the network is disconnected.
-            if (!navigator.onLine) {
-                latestCheckId++;
-                setStatus(false);
-                return;
-            }
-
-            // Do not invalidate a valid in-flight check just because a timer fired.
-            if (checkInProgress) return;
-
-            checkInProgress = true;
-            const checkId = ++latestCheckId;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-            try {
-                // A successful external request confirms usable internet, not merely
-                // a connected Wi-Fi adapter. no-cors is used as a reachability probe.
-                await fetch('https://www.gstatic.com/generate_204?check=' + Date.now(), {
-                    method: 'GET',
-                    mode: 'no-cors',
-                    cache: 'no-store',
-                    signal: controller.signal
-                });
-
-                if (checkId === latestCheckId) {
-                    setStatus(navigator.onLine);
-                }
-            } catch (_) {
-                if (checkId === latestCheckId) setStatus(false);
-            } finally {
-                clearTimeout(timeoutId);
-                checkInProgress = false;
-                // If connectivity was lost while the request was pending, don't
-                // leave a stale Online status behind.
-                if (!navigator.onLine) setStatus(false);
-            }
-        }
-
-        setStatus(false);
-        checkConnection();
-        window.addEventListener('online', checkConnection);
-        window.addEventListener('offline', () => {
-            latestCheckId++;
-            setStatus(false);
-        });
-        // Recheck every 5 seconds so a lost connection is detected promptly.
-        setInterval(checkConnection, 5000);
-    }
-
     /* ---------- MODAL ---------- */
     function ensureModal() {
         if (document.getElementById('customModalOverlay')) return;
@@ -445,7 +376,6 @@
         initMusic();
         initInteractionSounds();
         initPasswordToggles();
-        initWifi();
         ensureLoading();
     }
     if (document.readyState === 'loading') {
